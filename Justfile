@@ -35,3 +35,52 @@ build:
 [group("dev")]
 run:
     cargo run -p gamejam-001 --features dev
+
+# ------------------------------------------------------------------------------
+# fmt --------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# Format: *.rs
+[group("dev")]
+fmt:
+    cargo fmt
+
+# Format: everything
+[group("dev")]
+fmt-all: fmt fmt-just fmt-nix
+
+# Format: Justfile
+[group("dev")]
+[private]
+fmt-just:
+    just --fmt
+
+# Format: *.nix
+[group("dev")]
+[private]
+fmt-nix:
+    find . -type f -name '*.nix' -o -name '*.nix' | xargs nixfmt
+
+# ------------------------------------------------------------------------------
+# lint -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# Lint: *.rs
+[group('dev')]
+lint:
+    cargo fmt --check
+    cargo clippy --workspace -- -D warnings
+
+# Lint: everything
+[group('dev')]
+lint-all: lint lint-just lint-nix
+
+[group('dev')]
+[private]
+lint-just:
+    just --unstable --fmt --check
+
+[group('dev')]
+[private]
+lint-nix:
+    find . -type f -name '*.nix' -o -name '*.nix' | xargs nixfmt --check
