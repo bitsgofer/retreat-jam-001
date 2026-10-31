@@ -6,6 +6,11 @@ use bevy::prelude::{
 };
 use bevy::utils::default;
 
+mod config;
+mod global;
+
+use crate::config::ConfigPlugin;
+
 fn main() {
     App::new()
         .add_plugins(
@@ -24,12 +29,14 @@ fn main() {
                 }),
         )
         .add_systems(Startup, setup_camera)
+        .add_plugins(ConfigPlugin)
         .run();
 }
 
 fn print_copyright() {
     info!("Copyright © 2026 BitsGofer Studio.");
 }
+
 fn setup_camera(mut commands: Commands) {
     print_copyright();
     commands.spawn((
