@@ -8,8 +8,10 @@ use bevy::utils::default;
 
 mod config;
 mod global;
+mod level;
 
 use crate::config::ConfigPlugin;
+use crate::level::LevelPlugin;
 
 fn main() {
     App::new()
@@ -30,6 +32,7 @@ fn main() {
         )
         .add_systems(Startup, setup_camera)
         .add_plugins(ConfigPlugin)
+        .add_plugins(LevelPlugin)
         .run();
 }
 
