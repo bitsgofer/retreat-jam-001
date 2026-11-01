@@ -1,8 +1,8 @@
 use bevy::camera::ScalingMode;
 use bevy::log::{Level, LogPlugin, info};
 use bevy::prelude::{
-    App, Camera2d, Commands, DefaultPlugins, OrthographicProjection, PluginGroup, Projection,
-    Startup, Window, WindowPlugin,
+    App, Camera2d, Commands, DefaultPlugins, ImagePlugin, OrthographicProjection, PluginGroup,
+    Projection, Startup, Window, WindowPlugin,
 };
 use bevy::utils::default;
 
@@ -21,6 +21,7 @@ fn main() {
                     level: Level::INFO,
                     ..default()
                 })
+                .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "gamejam-001".into(),
