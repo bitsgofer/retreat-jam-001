@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::ops::RangeInclusive;
 
 use bevy::prelude::{
     App, AssetServer, Assets, Commands, Component, FromWorld, Handle, Image, Plugin, Res, Resource,
@@ -18,36 +20,26 @@ impl Plugin for LevelPlugin {
 
 fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>) {
     let sheet = sheets.get(SpriteSheetKind::Level);
-
-    const bottom_left: GridPos = GridPos { row: -1, col: -4 };
-    const top_right: GridPos = GridPos { row: 1, col: 4 };
-
-    fn is_border(pos: GridPos) -> bool {
-        return pos.row == bottom_left.row
-            || pos.row == top_right.row
-            || pos.col == bottom_left.col
-            || pos.col == top_right.col;
-    }
+    // TODO: take a LevelID
+    // let grid = TileGrid::straight_horizontal();
+    let grid = TileGrid::new(-5, -10, 5, 10).unwrap();
 
     commands.spawn(Level).with_children(|level| {
-        level.spawn(TileGrid).with_children(|grid| {
-            for row in bottom_left.row..=top_right.row {
-                for col in bottom_left.col..=top_right.col {
-                    let pos = GridPos::new(row, col);
-                    let kind = if is_border(pos) {
-                        TileKind::Wall
-                    } else {
-                        TileKind::Floor
-                    };
-                    grid.spawn((
-                        Tile { kind },
+        // Spawn the tiles first, while we can still borrow `tile_grid`,
+        // then move `tile_grid` into its entity.
+        level
+            .spawn_empty()
+            .with_children(|tiles| {
+                for (pos, tile) in grid.iter() {
+                    tiles.spawn((
+                        tile,
                         pos,
-                        sheet.sprite(kind.index_in_spritesheet()),
+                        sheet.sprite(tile.kind.index_in_spritesheet()),
                         Transform::from_translation(pos.to_xy().extend(0.0)),
                     ));
                 }
-            }
-        });
+            })
+            .insert(grid);
     });
 }
 
@@ -59,7 +51,137 @@ struct Level;
 /// A 2D grid of tiles, representing the layout of the a level.
 #[derive(Component, Debug)]
 #[require(Transform, Visibility)]
-struct TileGrid;
+struct TileGrid {
+    // row/col index (inclusive) of where the grid is
+    pub bottom: i32,
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    // size
+    pub rows: usize,
+    pub cols: usize,
+    //
+    pub tiles: Vec<Tile>,
+}
+
+impl TileGrid {
+    fn new(bottom: i32, left: i32, top: i32, right: i32) -> Result<Self, GridError> {
+        if bottom > top {
+            return Err(GridError::InvertedRows { bottom, top });
+        }
+        if left > right {
+            return Err(GridError::InvertedCols { left, right });
+        }
+
+        let rows = (top - bottom + 1) as usize;
+        let cols = (right - left + 1) as usize;
+        let mut grid = TileGrid {
+            bottom,
+            left,
+            top,
+            right,
+            rows,
+            cols,
+            tiles: vec![
+                Tile {
+                    kind: TileKind::Floor
+                };
+                rows * cols
+            ],
+        };
+
+        return Ok(grid);
+    }
+
+    fn contains(&self, pos: GridPos) -> bool {
+        let row_range: RangeInclusive<i32> = self.bottom..=self.top;
+        let col_range: RangeInclusive<i32> = self.left..=self.right;
+        return row_range.contains(&pos.row) && col_range.contains(&pos.col);
+    }
+
+    fn index(&self, pos: GridPos) -> Option<usize> {
+        if !self.contains(pos) {
+            return None;
+        }
+        let row = (pos.row - self.bottom) as usize;
+        let col = (pos.col - self.left) as usize;
+        return Some(row * self.cols + col);
+    }
+
+    /// Every `(GridPos, Tile)` in the grid, bottom row first.
+    fn iter(&self) -> impl Iterator<Item = (GridPos, Tile)> + '_ {
+        return (self.bottom..=self.top).flat_map(move |row| {
+            (self.left..=self.right).map(move |col| {
+                let pos = GridPos::new(row, col);
+                (pos, self.tiles[self.index(pos).unwrap()])
+            })
+        });
+    }
+
+    fn straight_horizontal() -> Self {
+        const bottom_left: GridPos = GridPos { row: -1, col: -9 };
+        const top_right: GridPos = GridPos { row: 1, col: 9 };
+
+        fn is_border(pos: GridPos) -> bool {
+            return pos.row == bottom_left.row
+                || pos.row == top_right.row
+                || pos.col == bottom_left.col
+                || pos.col == top_right.col;
+        }
+
+        let rows = (top_right.row - bottom_left.row + 1) as usize;
+        let cols = (top_right.col - bottom_left.col + 1) as usize;
+        let mut grid = TileGrid {
+            bottom: bottom_left.row,
+            left: bottom_left.col,
+            top: top_right.row,
+            right: top_right.col,
+            rows: rows,
+            cols: cols,
+            // tiles: Vec::with_capacity(3 as usize * 9 as usize),
+            tiles: vec![
+                Tile {
+                    kind: TileKind::Floor
+                };
+                rows * cols
+            ],
+        };
+
+        for row in grid.bottom..=grid.top {
+            for col in grid.left..=grid.right {
+                let pos = GridPos::new(row, col);
+                let kind = if is_border(pos) {
+                    TileKind::Wall
+                } else {
+                    TileKind::Floor
+                };
+                match grid.index(pos) {
+                    None => panic!("bad"),
+                    Some(idx) => grid.tiles[idx].kind = kind,
+                };
+            }
+        }
+
+        return grid;
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GridError {
+    /// `bottom` > `top`.
+    InvertedRows { bottom: i32, top: i32 },
+    /// `left` > `right`.
+    InvertedCols { left: i32, right: i32 },
+}
+
+impl fmt::Display for GridError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvertedRows { bottom, top } => write!(f, "bottom({bottom}) > top({top})"),
+            Self::InvertedCols { left, right } => write!(f, "left({left}) > right({right})"),
+        }
+    }
+}
 
 /// What a Tile represent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -78,7 +200,7 @@ impl TileKind {
 }
 
 /// A Tile within the TileGrid.
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Copy, Debug)]
 #[require(GridPos, Transform, Visibility, Sprite)]
 struct Tile {
     kind: TileKind,
