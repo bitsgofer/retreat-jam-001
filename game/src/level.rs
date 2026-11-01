@@ -2,14 +2,16 @@ use std::collections::HashMap;
 
 use bevy::prelude::{
     App, Component, Handle, Image, Plugin, Resource, Sprite, TextureAtlasLayout, Transform,
-    Visibility,
+    Visibility, FromWorld, AssetServer, UVec2, World, Assets,
 };
+
+use crate::global::*;
 
 pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        return;
+        app.init_resource::<SpriteSheets>();
     }
 }
 
@@ -56,4 +58,35 @@ struct SpriteSheet {
 
 /// All SpriteSheet(s) used in-game.
 #[derive(Resource)]
-struct SpriteSheets(HashMap<SpriteSheetKind, SpriteSheet>);
+pub struct SpriteSheets(HashMap<SpriteSheetKind, SpriteSheet>);
+
+impl SpriteSheets {
+    pub fn get(&self, kind: SpriteSheetKind) -> &SpriteSheet {
+        return &self.0[&kind];
+    }
+}
+
+impl FromWorld for SpriteSheets {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>().clone();
+        let mut layouts = world.resource_mut::<Assets<TextureAtlasLayout>>();
+
+        let mut sheets = HashMap::new();
+
+        sheets.insert(
+            SpriteSheetKind::Level,
+            SpriteSheet {
+                image: asset_server.load(LEVEL_SPRITESHEET_PATH),
+                layout: layouts.add(TextureAtlasLayout::from_grid(
+                    UVec2::splat(TILE_SIZE),
+                    4,
+                    4,
+                    None,
+                    None,
+                )),
+            },
+        );
+
+        return SpriteSheets(sheets);
+    }
+}
