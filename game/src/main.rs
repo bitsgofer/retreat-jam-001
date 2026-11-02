@@ -8,7 +8,9 @@ use bevy::utils::default;
 
 mod config;
 mod global;
+// mod grid;
 mod level;
+// mod assets;
 
 use crate::config::ConfigPlugin;
 use crate::level::LevelPlugin;

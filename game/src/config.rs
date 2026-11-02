@@ -56,11 +56,19 @@ fn print_config(
 /// Values that need to be tweaked often in dev build.
 /// Bevy will hot-reload values after the config file is saved.
 #[derive(Asset, TypePath, Deserialize, Clone, Copy, Debug)]
-pub struct Config {}
+pub struct Config {
+    // /// How fast does the player's anchor translate from one grid tile to another (px/s).
+    // pub player_move_speed: f32,
+    // /// How long each frame in the player's animation is shown (seconds).
+    // pub player_animation_frame_duration: f32,
+}
 
 impl Default for Config {
     fn default() -> Self {
-        Config {}
+        Config {
+            // player_move_speed: 50.0,
+            // player_animation_frame_duration: 0.1,
+        }
     }
 }
 
