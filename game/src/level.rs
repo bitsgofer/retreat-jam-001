@@ -14,39 +14,75 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SpriteSheets>()
+            .init_resource::<Levels>()
             .add_systems(Startup, spawn_level);
     }
 }
 
-fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>) {
+fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>, levels: Res<Levels>) {
     let sheet = sheets.get(SpriteSheetKind::Level);
-    // TODO: take a LevelID
-    // let grid = TileGrid::straight_horizontal();
-    let grid = TileGrid::new(-5, -10, 5, 10).unwrap();
+    // let kind = LevelKind::StraightHorizontal;
+    let kind = LevelKind::EmptyFloor;
+    let level = levels.get(kind);
 
-    commands.spawn(Level).with_children(|level| {
-        // Spawn the tiles first, while we can still borrow `tile_grid`,
-        // then move `tile_grid` into its entity.
-        level
-            .spawn_empty()
-            .with_children(|tiles| {
-                for (pos, tile) in grid.iter() {
-                    tiles.spawn((
-                        tile,
-                        pos,
-                        sheet.sprite(tile.kind.index_in_spritesheet()),
-                        Transform::from_translation(pos.to_xy().extend(0.0)),
-                    ));
-                }
-            })
-            .insert(grid);
+    // `Levels` keeps the data; the entities only show it.
+    commands.spawn(kind).with_children(|tiles| {
+        for (pos, tile) in level.grid.iter() {
+            tiles.spawn((
+                tile,
+                pos,
+                sheet.sprite(tile.kind.index_in_spritesheet()),
+                Transform::from_translation(pos.to_xy().extend(0.0)),
+            ));
+        }
     });
+}
+
+/// Level identifier.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[require(Transform, Visibility)] // TODO: why?
+enum LevelKind {
+    EmptyFloor,
+    StraightHorizontal,
+}
+
+// All levels
+#[derive(Resource)]
+pub struct Levels(HashMap<LevelKind, Level>);
+
+impl Levels {
+    pub fn get(&self, kind: LevelKind) -> &Level {
+        return &self.0[&kind];
+    }
+}
+
+impl FromWorld for Levels {
+    fn from_world(world: &mut World) -> Self {
+        let mut levels = HashMap::new();
+
+        levels.insert(
+            LevelKind::EmptyFloor,
+            Level {
+                grid: TileGrid::new(-5, -10, 5, 10).unwrap(),
+            },
+        );
+        levels.insert(
+            LevelKind::StraightHorizontal,
+            Level {
+                grid: TileGrid::straight_horizontal(),
+            },
+        );
+
+        return Levels(levels);
+    }
 }
 
 /// A single Level.
 #[derive(Component, Debug)]
 #[require(Transform, Visibility)]
-struct Level;
+struct Level {
+    grid: TileGrid,
+}
 
 /// A 2D grid of tiles, representing the layout of the a level.
 #[derive(Component, Debug)]
