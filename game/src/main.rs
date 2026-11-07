@@ -6,6 +6,7 @@ use bevy::prelude::{
 };
 use bevy::utils::default;
 
+mod global;
 mod level;
 
 use crate::level::LevelPlugin;
