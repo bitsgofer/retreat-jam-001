@@ -6,6 +6,10 @@ use bevy::prelude::{
 };
 use bevy::utils::default;
 
+mod level;
+
+use crate::level::LevelPlugin;
+
 fn main() {
     App::new()
         .add_plugins(
@@ -24,6 +28,7 @@ fn main() {
                 }),
         )
         .add_systems(Startup, setup_camera)
+        .add_plugins(LevelPlugin)
         .run();
 }
 
