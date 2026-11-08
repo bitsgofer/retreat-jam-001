@@ -1,0 +1,11 @@
+[workspace]
+members = [
+	"game"
+]
+resolver = "2"
+exclude = ["references"]
+
+[workspace.package]
+name    = "gamejam-001"
+version = "0.1.0"
+edition = "2024"

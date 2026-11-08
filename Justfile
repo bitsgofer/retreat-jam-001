@@ -25,6 +25,17 @@ repoRoot := invocation_directory() # OR: env("PWD", shell("pwd"))
 dev:
     nix develop
 
+# Build: game
+[group("dev")]
+build:
+    cargo build --features dev
+
+
+# Run: dev build (uses dynamic linking + asset hot-reload)
+[group("dev")]
+run:
+    cargo run -p gamejam-001 --features dev
+
 # ------------------------------------------------------------------------------
 # fmt --------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
