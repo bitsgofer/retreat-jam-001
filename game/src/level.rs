@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::ops::{Index, IndexMut};
 
 use bevy::prelude::{
     App, AssetServer, Assets, FromWorld, Handle, Image, Plugin, Resource, TextureAtlasLayout,
@@ -39,6 +41,122 @@ impl GridPos {
 enum Tile {
     Floor,
     Wall,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum GridError {
+    /// `bottom` > `top`.
+    InvertedRows { bottom: i32, top: i32 },
+    /// `left` > `right`.
+    InvertedCols { left: i32, right: i32 },
+}
+
+impl fmt::Display for GridError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvertedRows { bottom, top } => write!(f, "bottom({bottom}) > top({top})"),
+            Self::InvertedCols { left, right } => write!(f, "left({left}) > right({right})"),
+        }
+    }
+}
+
+/// A 2D grid of tiles, representing the layout of the level.
+#[derive(Debug)]
+struct TileGrid {
+    // row/col index of the grid's bounds:
+    // bottom <= row <= top, left <= col <= right
+    bottom: i32,
+    left: i32,
+    top: i32,
+    right: i32,
+    // (row, col) -> tiles[row*cols + col]
+    tiles: Vec<Tile>,
+}
+
+impl TileGrid {
+    fn new(bottom: i32, left: i32, top: i32, right: i32) -> Result<Self, GridError> {
+        if bottom > top {
+            return Err(GridError::InvertedRows { bottom, top });
+        }
+        if left > right {
+            return Err(GridError::InvertedCols { left, right });
+        }
+
+        let rows = (top - bottom + 1) as usize;
+        let cols = (right - left + 1) as usize;
+        let grid = TileGrid {
+            bottom,
+            left,
+            top,
+            right,
+            tiles: vec![Tile::Floor; rows * cols],
+        };
+
+        return Ok(grid);
+    }
+
+    fn rows(&self) -> usize {
+        return (self.top - self.bottom + 1) as usize;
+    }
+
+    fn cols(&self) -> usize {
+        return (self.right - self.left + 1) as usize;
+    }
+
+    fn contains(&self, pos: GridPos) -> bool {
+        return (self.bottom..=self.top).contains(&pos.row)
+            && (self.left..=self.right).contains(&pos.col);
+    }
+
+    /// `GridPos` -> index into `tiles`, or `None` (out of bounds).
+    fn flat_index(&self, pos: GridPos) -> Option<usize> {
+        if !self.contains(pos) {
+            return None;
+        }
+        let row = (pos.row - self.bottom) as usize;
+        let col = (pos.col - self.left) as usize;
+        return Some(row * self.cols() + col);
+    }
+
+    /// Returns the tile at a `GridPos`, or `None` (out of bounds).
+    fn get(&self, pos: GridPos) -> Option<&Tile> {
+        return self.flat_index(pos).map(|i| &self.tiles[i]);
+    }
+
+    /// Returns a mutable reference to the tile at a `GridPos`, or `None` (out of bounds).
+    fn get_mut(&mut self, pos: GridPos) -> Option<&mut Tile> {
+        let i = self.flat_index(pos)?;
+        return Some(&mut self.tiles[i]);
+    }
+
+    /// Iterator for looping through all tiles.
+    fn iter(&self) -> impl Iterator<Item = (usize, GridPos, Tile)> + '_ {
+        return (self.bottom..=self.top).flat_map(move |row| {
+            (self.left..=self.right).map(move |col| {
+                let pos = GridPos::new(row, col);
+                let index = self.flat_index(pos).unwrap();
+                (index, pos, self.tiles[index])
+            })
+        });
+    }
+}
+
+impl Index<GridPos> for TileGrid {
+    type Output = Tile;
+
+    fn index(&self, pos: GridPos) -> &Tile {
+        return self
+            .get(pos)
+            .unwrap_or_else(|| panic!("{pos:?} out of grid bounds"));
+    }
+}
+
+impl IndexMut<GridPos> for TileGrid {
+    fn index_mut(&mut self, pos: GridPos) -> &mut Tile {
+        return self
+            .get_mut(pos)
+            .unwrap_or_else(|| panic!("{pos:?} out of grid bounds"));
+    }
 }
 
 /// The SpriteSheet we are using.
