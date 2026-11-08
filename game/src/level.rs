@@ -15,6 +15,32 @@ impl Plugin for LevelPlugin {
     }
 }
 
+/// The `(row, col)` position of a Tile in the TileGrid.
+#[derive(Clone, Copy, Debug)]
+struct GridPos {
+    row: i32,
+    col: i32,
+}
+
+impl Default for GridPos {
+    fn default() -> Self {
+        return GridPos::new(0, 0);
+    }
+}
+
+impl GridPos {
+    fn new(row: i32, col: i32) -> Self {
+        return GridPos { row, col };
+    }
+}
+
+/// A Tile.
+#[derive(Clone, Copy, Debug)]
+enum Tile {
+    Floor,
+    Wall,
+}
+
 /// The SpriteSheet we are using.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum SpriteSheet {
