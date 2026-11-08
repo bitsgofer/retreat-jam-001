@@ -9,3 +9,14 @@ exclude = ["references"]
 name    = "gamejam-001"
 version = "0.1.0"
 edition = "2024"
+
+# [workspace.dependencies]
+
+# TODO: Try code optimization (maybe only for release build)
+# [profile.dev]
+# opt-level = 1
+# debug = "line-tables-only"
+#
+# [profile.dev.package."*"]
+# opt-level = 3
+# debug = false
