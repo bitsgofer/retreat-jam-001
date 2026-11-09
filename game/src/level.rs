@@ -13,7 +13,8 @@ pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SpriteSheets>();
+        app.init_resource::<SpriteSheets>()
+            .init_resource::<Levels>();
     }
 }
 
@@ -141,6 +142,39 @@ impl TileGrid {
     }
 }
 
+impl TileGrid {
+    fn for_level(lvl: Level) -> Self {
+        match lvl {
+            Level::_0 => Self::lvl_0(),
+            Level::_1 => Self::lvl_1(),
+        }
+    }
+
+    fn lvl_0() -> Self {
+        let grid = TileGrid::new(-5, -9, 5, 9).unwrap();
+
+        return grid;
+    }
+
+    fn lvl_1() -> Self {
+        let mut grid = TileGrid::new(-1, -5, 1, 5).unwrap();
+        let bottom = grid.bottom;
+        let top = grid.top;
+        let left = grid.left;
+        let right = grid.right;
+        for c in grid.left..=grid.right {
+            grid[GridPos::new(bottom, c)] = Tile::Wall;
+            grid[GridPos::new(top, c)] = Tile::Wall;
+        }
+        for r in grid.bottom..=grid.top {
+            grid[GridPos::new(r, left)] = Tile::Wall;
+            grid[GridPos::new(r, right)] = Tile::Wall;
+        }
+
+        return grid;
+    }
+}
+
 impl Index<GridPos> for TileGrid {
     type Output = Tile;
 
@@ -163,6 +197,28 @@ impl IndexMut<GridPos> for TileGrid {
 enum Level {
     _0,
     _1,
+}
+
+/// All Level(s) used in-game.
+#[derive(Resource)]
+struct Levels(HashMap<Level, TileGrid>);
+
+impl Levels {
+    fn get(&self, lvl: Level) -> &TileGrid {
+        return &self.0[&lvl];
+    }
+}
+
+impl FromWorld for Levels {
+    fn from_world(_: &mut World) -> Self {
+        let mut levels = HashMap::new();
+        let to_init = vec![Level::_0, Level::_1];
+        for lvl in to_init {
+            levels.insert(lvl, TileGrid::for_level(lvl));
+        }
+
+        return Levels(levels);
+    }
 }
 
 /// The SpriteSheet we are using.
