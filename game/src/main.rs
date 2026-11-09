@@ -1,8 +1,8 @@
 use bevy::camera::ScalingMode;
 use bevy::log::{Level, LogPlugin, info};
 use bevy::prelude::{
-    App, Camera2d, Commands, DefaultPlugins, OrthographicProjection, PluginGroup, Projection,
-    Startup, Window, WindowPlugin,
+    App, Camera2d, Commands, DefaultPlugins, ImagePlugin, OrthographicProjection, PluginGroup,
+    Projection, Startup, Window, WindowPlugin,
 };
 use bevy::utils::default;
 
@@ -26,7 +26,8 @@ fn main() {
                         ..default()
                     }),
                     ..default()
-                }),
+                })
+                .set(ImagePlugin::default_nearest()),
         )
         .add_systems(Startup, setup_camera)
         .add_plugins(LevelPlugin)
