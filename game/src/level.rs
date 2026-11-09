@@ -72,6 +72,8 @@ impl GridPos {
 enum Tile {
     Floor,
     Wall,
+    MazeStart,
+    MazeEnd,
 }
 
 impl Tile {
@@ -79,6 +81,8 @@ impl Tile {
         return match self {
             Tile::Floor => 0,
             Tile::Wall => 1,
+            Tile::MazeStart => 2,
+            Tile::MazeEnd => 3,
         };
     }
 }
@@ -209,6 +213,8 @@ impl TileGrid {
             grid[GridPos::new(r, left)] = Tile::Wall;
             grid[GridPos::new(r, right)] = Tile::Wall;
         }
+        grid[GridPos::new(0, -4)] = Tile::MazeStart;
+        grid[GridPos::new(0, 4)] = Tile::MazeEnd;
 
         return grid;
     }
