@@ -3,8 +3,9 @@ use std::fmt;
 use std::ops::{Index, IndexMut};
 
 use bevy::prelude::{
-    App, AssetServer, Assets, FromWorld, Handle, Image, Plugin, Resource, TextureAtlasLayout,
-    UVec2, World,
+    App, AssetServer, Assets, Commands, Component, FromWorld, Handle, Image, Name, Plugin, Res,
+    Resource, Sprite, Startup, TextureAtlas, TextureAtlasLayout, Transform, UVec2, Vec2,
+    Visibility, World,
 };
 
 use crate::global;
@@ -14,12 +15,32 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SpriteSheets>()
-            .init_resource::<Levels>();
+            .init_resource::<Levels>()
+            .add_systems(Startup, spawn_level);
     }
 }
 
+fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>, levels: Res<Levels>) {
+    let lvl = Level::_1;
+    let grid = levels.get(lvl);
+    let sheet = sheets.get(SpriteSheet::Level);
+    commands.spawn(lvl).with_children(|level| {
+        for (_, pos, tile) in grid.iter() {
+            level.spawn((
+                tile,
+                pos,
+                sheet.sprite(tile.index_in_tile_spritesheet()),
+                Transform::from_translation(pos.to_xy().extend(0.0)),
+                bevy::sprite::Anchor::BOTTOM_LEFT,
+                Name::new(format!("Tile({}, {})", pos.row, pos.col)),
+            ));
+        }
+    });
+    return;
+}
+
 /// The `(row, col)` position of a Tile in the TileGrid.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Component)]
 struct GridPos {
     row: i32,
     col: i32,
@@ -35,13 +56,31 @@ impl GridPos {
     fn new(row: i32, col: i32) -> Self {
         return GridPos { row, col };
     }
+
+    /// Return `(x, y)` (world) coordinates of the cell's anchor
+    /// (its bottom-left corner).
+    fn to_xy(self) -> Vec2 {
+        return Vec2::new(
+            self.col as f32 * global::TILE_SIZE_PIXELS as f32,
+            self.row as f32 * global::TILE_SIZE_PIXELS as f32,
+        );
+    }
 }
 
 /// A Tile.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Component)]
 enum Tile {
     Floor,
     Wall,
+}
+
+impl Tile {
+    fn index_in_tile_spritesheet(self) -> usize {
+        return match self {
+            Tile::Floor => 0,
+            Tile::Wall => 1,
+        };
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -193,7 +232,8 @@ impl IndexMut<GridPos> for TileGrid {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Component)]
+#[require(Transform, Visibility)]
 enum Level {
     _0,
     _1,
