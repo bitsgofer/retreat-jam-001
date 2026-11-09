@@ -159,6 +159,12 @@ impl IndexMut<GridPos> for TileGrid {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum Level {
+    _0,
+    _1,
+}
+
 /// The SpriteSheet we are using.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum SpriteSheet {
