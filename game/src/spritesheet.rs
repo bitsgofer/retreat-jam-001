@@ -19,12 +19,14 @@ impl Plugin for SpriteSheetPlugin {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum SpriteSheet {
     Level,
+    Player,
 }
 
 impl SpriteSheet {
     fn as_str(&self) -> &'static str {
         match self {
             SpriteSheet::Level => global::LEVEL_SPRITESHEET_PATH,
+            SpriteSheet::Player => global::PLAYER_SPRITESHEET_PATH,
         }
     }
 }
@@ -72,6 +74,19 @@ impl FromWorld for SpriteSheets {
                 layout: layouts.add(TextureAtlasLayout::from_grid(
                     UVec2::splat(global::TILE_SIZE_PIXELS),
                     4,
+                    4,
+                    None,
+                    None,
+                )),
+            },
+        );
+        sheets.insert(
+            SpriteSheet::Player,
+            SpriteSheetHandle {
+                image: asset_server.load(SpriteSheet::Player.as_str()),
+                layout: layouts.add(TextureAtlasLayout::from_grid(
+                    UVec2::splat(global::TILE_SIZE_PIXELS),
+                    16,
                     4,
                     None,
                     None,
