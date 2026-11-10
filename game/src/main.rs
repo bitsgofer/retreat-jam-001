@@ -8,9 +8,11 @@ use bevy::utils::default;
 
 mod global;
 mod level;
+mod player;
 mod spritesheet;
 
 use crate::level::LevelPlugin;
+use crate::player::PlayerPlugin;
 use crate::spritesheet::SpriteSheetPlugin;
 
 fn main() {
@@ -34,6 +36,7 @@ fn main() {
         .add_systems(Startup, setup_camera)
         .add_plugins(SpriteSheetPlugin)
         .add_plugins(LevelPlugin)
+        .add_plugins(PlayerPlugin)
         .run();
 }
 
