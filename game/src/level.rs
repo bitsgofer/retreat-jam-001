@@ -6,6 +6,7 @@ use bevy::prelude::{
     App, Commands, Component, FromWorld, Name, Plugin, Res, Resource, Startup, Transform, Vec2,
     Visibility, World,
 };
+use bevy::sprite::Anchor;
 
 use crate::global;
 use crate::spritesheet::SpriteSheet;
@@ -30,8 +31,8 @@ fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>, levels: Res<Le
                 tile,
                 pos,
                 sheet.sprite(tile.index_in_tile_spritesheet()),
-                Transform::from_translation(pos.to_xy().extend(0.0)),
-                bevy::sprite::Anchor::BOTTOM_LEFT,
+                Transform::from_translation(pos.to_xy().extend(global::LEVEL_Z)),
+                Anchor::BOTTOM_LEFT,
                 Name::new(format!("Tile({}, {})", pos.row, pos.col)),
             ));
         }
