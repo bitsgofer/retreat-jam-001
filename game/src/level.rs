@@ -3,8 +3,8 @@ use std::fmt;
 use std::ops::{Index, IndexMut};
 
 use bevy::prelude::{
-    App, Commands, Component, FromWorld, Name, Plugin, Res, Resource, Startup, Transform, Vec2,
-    Visibility, World,
+    App, AppExtStates, Commands, Component, DespawnOnExit, FromWorld, Name, OnEnter, Plugin, Res,
+    Resource, State, States, Transform, Vec2, Visibility, World,
 };
 use bevy::sprite::Anchor;
 
@@ -17,26 +17,35 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Levels>()
-            .add_systems(Startup, spawn_level);
+            .insert_state(Level::_1)
+            .add_systems(OnEnter(Level::_0), spawn_level)
+            .add_systems(OnEnter(Level::_1), spawn_level);
     }
 }
 
-fn spawn_level(mut commands: Commands, sheets: Res<SpriteSheets>, levels: Res<Levels>) {
-    let lvl = Level::_1;
+fn spawn_level(
+    mut commands: Commands,
+    sheets: Res<SpriteSheets>,
+    levels: Res<Levels>,
+    current_level: Res<State<Level>>,
+) {
+    let lvl = *current_level.get();
     let grid = levels.get(lvl);
     let sheet = sheets.get(SpriteSheet::Level);
-    commands.spawn(lvl).with_children(|level| {
-        for (_, pos, tile) in grid.iter() {
-            level.spawn((
-                tile,
-                pos,
-                sheet.sprite(tile.index_in_tile_spritesheet()),
-                Transform::from_translation(pos.to_xy().extend(global::LEVEL_Z)),
-                Anchor::BOTTOM_LEFT,
-                Name::new(format!("Tile({}, {})", pos.row, pos.col)),
-            ));
-        }
-    });
+    commands
+        .spawn((LevelRoot, DespawnOnExit(lvl)))
+        .with_children(|level| {
+            for (_, pos, tile) in grid.iter() {
+                level.spawn((
+                    tile,
+                    pos,
+                    sheet.sprite(tile.index_in_tile_spritesheet()),
+                    Transform::from_translation(pos.to_xy().extend(global::LEVEL_Z)),
+                    Anchor::BOTTOM_LEFT,
+                    Name::new(format!("Tile({}, {})", pos.row, pos.col)),
+                ));
+            }
+        });
     return;
 }
 
@@ -239,12 +248,19 @@ impl IndexMut<GridPos> for TileGrid {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Component)]
+#[derive(Component)]
 #[require(Transform, Visibility)]
+struct LevelRoot;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, States)]
 enum Level {
     _0,
     _1,
 }
+
+// fn on_maze_end_reached(mut next: ResMut<NextState<Level>>) {
+//     next.set(Level::_0);
+// }
 
 /// All Level(s) used in-game.
 #[derive(Resource)]
