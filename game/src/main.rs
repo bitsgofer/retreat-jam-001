@@ -8,8 +8,10 @@ use bevy::utils::default;
 
 mod global;
 mod level;
+mod spritesheet;
 
 use crate::level::LevelPlugin;
+use crate::spritesheet::SpriteSheetPlugin;
 
 fn main() {
     App::new()
@@ -30,6 +32,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .add_systems(Startup, setup_camera)
+        .add_plugins(SpriteSheetPlugin)
         .add_plugins(LevelPlugin)
         .run();
 }
