@@ -51,9 +51,9 @@ fn spawn_level(
 
 /// The `(row, col)` position of a Tile in the TileGrid.
 #[derive(Clone, Copy, Debug, Component)]
-struct GridPos {
-    row: i32,
-    col: i32,
+pub struct GridPos {
+    pub row: i32,
+    pub col: i32,
 }
 
 impl Default for GridPos {
@@ -63,13 +63,13 @@ impl Default for GridPos {
 }
 
 impl GridPos {
-    fn new(row: i32, col: i32) -> Self {
+    pub fn new(row: i32, col: i32) -> Self {
         return GridPos { row, col };
     }
 
     /// Return `(x, y)` (world) coordinates of the cell's anchor
     /// (its bottom-left corner).
-    fn to_xy(self) -> Vec2 {
+    pub fn to_xy(self) -> Vec2 {
         return Vec2::new(
             self.col as f32 * global::TILE_SIZE_PIXELS as f32,
             self.row as f32 * global::TILE_SIZE_PIXELS as f32,
