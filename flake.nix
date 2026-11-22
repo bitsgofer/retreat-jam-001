@@ -57,6 +57,7 @@
             pkgs.vulkan-loader
             pkgs.mesa
             pkgs.libdrm
+            pkgs.miniserve
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
             # On MacOS:

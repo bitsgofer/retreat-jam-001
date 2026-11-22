@@ -141,3 +141,31 @@ run-release: package
             echo "--- running ---"
             ./{{program}}
         ' _ "$dir"
+
+# Build: wasm32 release + JS bindings for the browser
+[group("release")]
+build-web-release:
+    cargo build --release --target wasm32-unknown-unknown -p {{program}}
+    rm -rf dist/{{program}}-web
+    mkdir -p dist/{{program}}-web
+    wasm-bindgen \
+        --no-typescript \
+        --target web \
+        --out-dir dist/{{program}}-web \
+        --out-name game \
+        target/wasm32-unknown-unknown/release/{{program}}.wasm
+    # Optimize game size for itch.io's upload
+    wasm-opt --all-features -Oz -o dist/{{program}}-web/game_bg.wasm dist/{{program}}-web/game_bg.wasm
+
+# Package: browser build for itch.io
+[group("release")]
+package-web: build-web-release
+    cp web/index.html dist/{{program}}-web/
+    cp -r assets dist/{{program}}-web/
+    rm -f dist/{{program}}-web/assets/*.aseprite
+    cd dist/{{program}}-web && zip -rq ../{{program}}-web.zip .
+
+# Serve: browser build at http://localhost:<port>
+[group("release")]
+run-web-release port="8080": package-web
+    miniserve --port {{port}} dist/{{program}}-web
