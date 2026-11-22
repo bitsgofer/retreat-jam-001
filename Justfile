@@ -31,11 +31,10 @@ dev:
 build:
     cargo build --features dev
 
-
 # Run: dev build (uses dynamic linking + asset hot-reload)
 [group("dev")]
 run:
-    cargo run -p {{program}} --features dev
+    cargo run -p {{ program }} --features dev
 
 # ------------------------------------------------------------------------------
 # fmt --------------------------------------------------------------------------
@@ -95,14 +94,14 @@ lint-nix:
 # Build: release program (optimized, no dev features)
 [group("release")]
 build-release:
-    cargo build --release -p {{program}}
+    cargo build --release -p {{ program }}
 
 # Package: Linux build
 [group("release")]
 package: build-release
-    rm -rf dist/{{program}}-linux
-    mkdir -p dist/{{program}}-linux
-    cp target/release/{{program}} dist/{{program}}-linux/
+    rm -rf dist/{{ program }}-linux
+    mkdir -p dist/{{ program }}-linux
+    cp target/release/{{ program }} dist/{{ program }}-linux/
     # Update the ELF program, using system paths instead of Nix-based ones:
     # - Use system `ld` as ELF interpreter
     # - Use system libs (wayland, alsa, udev libgcc_s, libc, etc)
@@ -112,12 +111,12 @@ package: build-release
     patchelf \
         --set-interpreter /lib64/ld-linux-x86-64.so.2 \
          --remove-rpath \
-        dist/{{program}}-linux/{{program}}
+        dist/{{ program }}-linux/{{ program }}
     # Copy asssets
-    cp -r assets dist/{{program}}-linux/
-    rm -f dist/{{program}}-linux/assets/*.aseprite
+    cp -r assets dist/{{ program }}-linux/
+    rm -f dist/{{ program }}-linux/assets/*.aseprite
     # Zip
-    cd dist/{{program}}-linux && zip -rq ../{{program}}-linux.zip .
+    cd dist/{{ program }}-linux && zip -rq ../{{ program }}-linux.zip .
 
 # Run: packaged Linux build from a temp dir, in a clean (non-Nix) environment
 [group("release")]
@@ -125,9 +124,9 @@ package: build-release
 run-release: package
     set -euo pipefail
     set -x
-    dir=$(mktemp -d /tmp/{{program}}-linux.XXXXXX)
+    dir=$(mktemp -d /tmp/{{ program }}-linux.XXXXXX)
     # Extract release to tmp dir
-    unzip -q dist/{{program}}-linux.zip -d "$dir"
+    unzip -q dist/{{ program }}-linux.zip -d "$dir"
     # Wipe the environment (no Nix PATH, LD_LIBRARY_PATH, CARGO_MANIFEST_DIR, ...),
     # keeping only what's needed to reach the display and audio servers.
     env -i \
@@ -137,35 +136,35 @@ run-release: package
         bash --noprofile --norc -c '
             cd "$1"
             echo "--- missing shared libs (ldd) ---"
-            ldd ./{{program}} | grep "not found" || echo "(none)"
+            ldd ./{{ program }} | grep "not found" || echo "(none)"
             echo "--- running ---"
-            ./{{program}}
+            ./{{ program }}
         ' _ "$dir"
 
 # Build: wasm32 release + JS bindings for the browser
 [group("release")]
 build-web-release:
-    cargo build --release --target wasm32-unknown-unknown -p {{program}}
-    rm -rf dist/{{program}}-web
-    mkdir -p dist/{{program}}-web
+    cargo build --release --target wasm32-unknown-unknown -p {{ program }}
+    rm -rf dist/{{ program }}-web
+    mkdir -p dist/{{ program }}-web
     wasm-bindgen \
         --no-typescript \
         --target web \
-        --out-dir dist/{{program}}-web \
+        --out-dir dist/{{ program }}-web \
         --out-name game \
-        target/wasm32-unknown-unknown/release/{{program}}.wasm
+        target/wasm32-unknown-unknown/release/{{ program }}.wasm
     # Optimize game size for itch.io's upload
-    wasm-opt --all-features -Oz -o dist/{{program}}-web/game_bg.wasm dist/{{program}}-web/game_bg.wasm
+    wasm-opt --all-features -Oz -o dist/{{ program }}-web/game_bg.wasm dist/{{ program }}-web/game_bg.wasm
 
 # Package: browser build for itch.io
 [group("release")]
 package-web: build-web-release
-    cp web/index.html dist/{{program}}-web/
-    cp -r assets dist/{{program}}-web/
-    rm -f dist/{{program}}-web/assets/*.aseprite
-    cd dist/{{program}}-web && zip -rq ../{{program}}-web.zip .
+    cp web/index.html dist/{{ program }}-web/
+    cp -r assets dist/{{ program }}-web/
+    rm -f dist/{{ program }}-web/assets/*.aseprite
+    cd dist/{{ program }}-web && zip -rq ../{{ program }}-web.zip .
 
 # Serve: browser build at http://localhost:<port>
 [group("release")]
 run-web-release port="8080": package-web
-    miniserve --port {{port}} dist/{{program}}-web
+    miniserve --port {{ port }} dist/{{ program }}-web
