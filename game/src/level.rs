@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::{Add, Index, IndexMut, Neg, Sub};
 
+use strum::{EnumIter, IntoEnumIterator};
+
 use bevy::prelude::{
     App, AppExtStates, Commands, Component, DespawnOnExit, FromWorld, Name, OnEnter, Plugin, Res,
     Resource, State, SubStates, Transform, Vec2, Visibility, World,
@@ -23,12 +25,10 @@ impl Plugin for LevelPlugin {
         );
 
         app.init_resource::<Levels>()
-            .add_sub_state::<Level>()
-            .add_systems(OnEnter(Level::_0), spawn_level)
-            .add_systems(OnEnter(Level::_1), spawn_level)
-            .add_systems(OnEnter(Level::_2), spawn_level)
-            .add_systems(OnEnter(Level::_3), spawn_level)
-            .add_systems(OnEnter(Level::_4), spawn_level);
+            .add_sub_state::<Level>();
+        for lvl in Level::iter() {
+            app.add_systems(OnEnter(lvl), spawn_level);
+        };
     }
 }
 
@@ -629,7 +629,7 @@ impl IndexMut<GridVec2> for TileGrid {
 #[require(Transform, Visibility)]
 struct LevelRoot;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, SubStates, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, SubStates, Default, EnumIter)]
 #[source(GameState = GameState::Intro | GameState::Playing)]
 pub enum Level {
     _0,
@@ -641,7 +641,6 @@ pub enum Level {
 }
 
 impl Level {
-    const TO_INIT: [Level; 5] = [Level::_0, Level::_1, Level::_2, Level::_3, Level::_4];
     pub const PLAYABLE: [Level; 3] = [Level::_2, Level::_3, Level::_4];
 }
 
@@ -662,7 +661,7 @@ impl Levels {
 impl FromWorld for Levels {
     fn from_world(_: &mut World) -> Self {
         let mut levels = HashMap::new();
-        for lvl in Level::TO_INIT {
+        for lvl in Level::iter() {
             levels.insert(lvl, TileGrid::for_level(lvl));
         }
 

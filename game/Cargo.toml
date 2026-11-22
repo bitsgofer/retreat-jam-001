@@ -9,6 +9,7 @@ log  = { version = "0.4.34" }
 ron = "0.12"
 serde = { version = "1", features = ["derive"] }
 rand = { version = "0.10.4" }
+strum = { version = "0.28.0", features = ["derive"] }
 
 [features]
 # Development build
