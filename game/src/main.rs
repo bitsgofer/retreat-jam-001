@@ -10,11 +10,13 @@ mod game_state;
 mod global;
 mod level;
 mod player;
+mod root;
 mod spritesheet;
 
 use crate::game_state::GameStatePlugin;
 use crate::level::LevelPlugin;
 use crate::player::{GameRng, PlayerPlugin};
+use crate::root::GameRoot;
 use crate::spritesheet::SpriteSheetPlugin;
 
 fn main() {
@@ -22,6 +24,7 @@ fn main() {
     info!("rng_seed={}", rng_seed);
 
     App::new()
+        .init_resource::<GameRoot>()
         .insert_resource(GameRng::new(rng_seed))
         .add_plugins(
             DefaultPlugins

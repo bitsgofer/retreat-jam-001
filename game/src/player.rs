@@ -6,15 +6,17 @@ use rand::rngs::Xoshiro128PlusPlus;
 
 use bevy::log::info;
 use bevy::prelude::{
-    App, ButtonInput, Commands, Component, Fixed, FixedUpdate, IntoScheduleConfigs, KeyCode, Name,
-    NextState, Plugin, Query, Res, ResMut, Resource, RunFixedMainLoop, RunFixedMainLoopSystems,
-    Sprite, Startup, State, Time, Timer, TimerMode, Transform, Update, With,
+    App, ButtonInput, ChildOf, Commands, Component, Fixed, FixedUpdate, IntoScheduleConfigs,
+    KeyCode, Name, NextState, Plugin, Query, Res, ResMut, Resource, RunFixedMainLoop,
+    RunFixedMainLoopSystems, Sprite, Startup, State, Time, Timer, TimerMode, Transform, Update,
+    With,
 };
 
 use bevy::sprite::Anchor;
 
 use crate::global;
 use crate::level::{GridDelta, GridPos, Level, Levels, Tile, TileGrid};
+use crate::root::GameRoot;
 use crate::spritesheet::{SpriteSheet, SpriteSheets};
 
 pub struct PlayerPlugin;
@@ -41,6 +43,7 @@ impl Plugin for PlayerPlugin {
 
 fn spawn_player(
     mut commands: Commands,
+    root: Res<GameRoot>,
     sheets: Res<SpriteSheets>,
     level: Res<State<Level>>,
     levels: Res<Levels>,
@@ -49,6 +52,7 @@ fn spawn_player(
     let grid = levels.get(*level.get());
     commands.spawn((
         Player,
+        ChildOf(root.0),
         sheet.sprite(0 as usize),
         Transform::default(),
         Anchor::BOTTOM_LEFT,

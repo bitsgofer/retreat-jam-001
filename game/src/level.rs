@@ -5,13 +5,14 @@ use std::ops::{Add, Index, IndexMut, Neg, Sub};
 use strum::{EnumIter, IntoEnumIterator};
 
 use bevy::prelude::{
-    App, AppExtStates, Commands, Component, DespawnOnExit, FromWorld, Name, OnEnter, Plugin, Res,
-    Resource, State, SubStates, Transform, Vec2, Visibility, World,
+    App, AppExtStates, ChildOf, Commands, Component, DespawnOnExit, FromWorld, Name, OnEnter,
+    Plugin, Res, Resource, State, SubStates, Transform, Vec2, Visibility, World,
 };
 use bevy::sprite::Anchor;
 
 use crate::game_state::{GameState, GameStatePlugin};
 use crate::global;
+use crate::root::GameRoot;
 use crate::spritesheet::SpriteSheet;
 use crate::spritesheet::SpriteSheets;
 
@@ -24,8 +25,7 @@ impl Plugin for LevelPlugin {
             "LevelPlugin requires GameStatePlugin"
         );
 
-        app.init_resource::<Levels>()
-            .add_sub_state::<Level>();
+        app.init_resource::<Levels>().add_sub_state::<Level>();
         for lvl in Level::iter() {
             app.add_systems(OnEnter(lvl), spawn_level);
         };
@@ -34,6 +34,7 @@ impl Plugin for LevelPlugin {
 
 fn spawn_level(
     mut commands: Commands,
+    root: Res<GameRoot>,
     sheets: Res<SpriteSheets>,
     levels: Res<Levels>,
     current_level: Res<State<Level>>,
@@ -42,7 +43,7 @@ fn spawn_level(
     let grid = levels.get(lvl);
     let sheet = sheets.get(SpriteSheet::Level);
     commands
-        .spawn((LevelRoot, DespawnOnExit(lvl)))
+        .spawn((LevelRoot, DespawnOnExit(lvl), ChildOf(root.0)))
         .with_children(|level| {
             for (_, pos, tile) in grid.iter() {
                 level.spawn((
