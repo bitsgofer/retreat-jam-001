@@ -87,3 +87,57 @@ lint-just:
 [private]
 lint-nix:
     find . -type f -name '*.nix' -o -name '*.nix' | xargs nixfmt --check
+
+# ##############################################################################
+# release ######################################################################
+# ##############################################################################
+
+# Build: release program (optimized, no dev features)
+[group("release")]
+build-release:
+    cargo build --release -p {{program}}
+
+# Package: Linux build
+[group("release")]
+package: build-release
+    rm -rf dist/{{program}}-linux
+    mkdir -p dist/{{program}}-linux
+    cp target/release/{{program}} dist/{{program}}-linux/
+    # Update the ELF program, using system paths instead of Nix-based ones:
+    # - Use system `ld` as ELF interpreter
+    # - Use system libs (wayland, alsa, udev libgcc_s, libc, etc)
+    #
+    # NOTE: Vulkan/Mesa have their libs called in dlopen() at runtime instead.
+    # => unaffected by this.
+    patchelf \
+        --set-interpreter /lib64/ld-linux-x86-64.so.2 \
+         --remove-rpath \
+        dist/{{program}}-linux/{{program}}
+    # Copy asssets
+    cp -r assets dist/{{program}}-linux/
+    rm -f dist/{{program}}-linux/assets/*.aseprite
+    # Zip
+    cd dist/{{program}}-linux && zip -rq ../{{program}}-linux.zip .
+
+# Run: packaged Linux build from a temp dir, in a clean (non-Nix) environment
+[group("release")]
+[script("bash")]
+run-release: package
+    set -euo pipefail
+    set -x
+    dir=$(mktemp -d /tmp/{{program}}-linux.XXXXXX)
+    # Extract release to tmp dir
+    unzip -q dist/{{program}}-linux.zip -d "$dir"
+    # Wipe the environment (no Nix PATH, LD_LIBRARY_PATH, CARGO_MANIFEST_DIR, ...),
+    # keeping only what's needed to reach the display and audio servers.
+    env -i \
+        HOME="$HOME" \
+        USER="$USER" \
+        PATH=/usr/local/bin:/usr/bin:/bin \
+        bash --noprofile --norc -c '
+            cd "$1"
+            echo "--- missing shared libs (ldd) ---"
+            ldd ./{{program}} | grep "not found" || echo "(none)"
+            echo "--- running ---"
+            ./{{program}}
+        ' _ "$dir"
