@@ -28,7 +28,7 @@ impl Plugin for LevelPlugin {
         app.init_resource::<Levels>().add_sub_state::<Level>();
         for lvl in Level::iter() {
             app.add_systems(OnEnter(lvl), spawn_level);
-        };
+        }
     }
 }
 
