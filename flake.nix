@@ -35,6 +35,7 @@
             pkgs.git-lfs
             pkgs.shfmt
             pkgs.shellcheck
+            pkgs.direnv
           ]
           ++ [
             # Release
